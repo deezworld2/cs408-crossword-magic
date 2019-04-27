@@ -1,15 +1,19 @@
 package mcis.jsu.edu.crosswordmagic;
 
+import android.app.AlertDialog;
 import android.arch.lifecycle.ViewModelProviders;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
+import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.support.v7.widget.GridLayout;
 import android.view.ViewGroup.LayoutParams;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -197,9 +201,12 @@ public class PuzzleFragmentView extends Fragment implements View.OnClickListener
 
     }
 
+    private String userInput;
+    private String uppercase;
+
+
     @Override
     public void onClick(View v) {
-
         /* Sample OnClick() Implementation */
 
         /* Get Tag of Clicked View */
@@ -208,13 +215,13 @@ public class PuzzleFragmentView extends Fragment implements View.OnClickListener
 
         /* Compute Row/Column/Index from Tag */
 
-        int row = Integer.parseInt(tag.substring(6, 8));
-        int col = Integer.parseInt(tag.substring(8));
+        final int row = Integer.parseInt(tag.substring(6, 8));
+        final int col = Integer.parseInt(tag.substring(8));
         int index = (row * model.getPuzzleHeight()) + col;
 
         /* Get Box Numbers from Model */
 
-        Integer[][] numbers = model.getNumbers();
+        final Integer[][] numbers = model.getNumbers();
 
         /* Was a number clicked?  If so, display it in a Toast */
 
@@ -227,11 +234,62 @@ public class PuzzleFragmentView extends Fragment implements View.OnClickListener
 
             GridLayout squaresContainer = getActivity().findViewById(R.id.squaresContainer);
             TextView element = (TextView) squaresContainer.getChildAt(index);
-            element.setText("X");
 
-            /* Update Grid Contents */
 
-            updatePuzzleView();
+
+            //construct AlertDialog to get user text
+            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+            builder.setTitle("Enter your Guess");
+            builder.setMessage("");
+            final EditText input = new EditText(getActivity());
+            input.setInputType(InputType.TYPE_CLASS_TEXT);
+            builder.setView(input);
+            builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                @Override
+
+                //we will use this to check all the information and stuff
+                public void onClick(DialogInterface d, int i) {
+                    userInput = input.getText().toString();
+
+                    //get the word information
+                    int box = numbers[row][col];
+                    Word acrossWord = model.getWord(box + "A");
+                    Word downWord = model.getWord(box + "D");
+
+                    //take the user guess, convert to uppercase
+                    String guess = input.getText().toString().toUpperCase().trim();
+
+                    //AS LONG AS THESE ARE NOT NULL
+                    if (acrossWord != null){
+                        //if a match, show it!
+                        if (acrossWord.getWord().equals(guess)){
+                            model.addWordToGrid(box + "A");
+                            updatePuzzleView();
+                        }
+                    }
+                    if (downWord != null){
+                        //if a match, show it!
+                        if (downWord.getWord().equals(guess)){
+                            model.addWordToGrid(box + "D");
+                            updatePuzzleView();
+                        }
+                    }
+
+                }
+            });
+            //this is to cancel
+            builder.setNegativeButton("CANCEL", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface d, int i) {
+                    userInput = "";
+                    d.cancel();
+                }
+            });
+            //show our prompt
+            AlertDialog aboutDialog = builder.show();
+
+
+
 
         }
 
